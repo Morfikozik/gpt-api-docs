@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
-      - name: Download exact public deployed files and verify against uploaded ZIP
+      - name: Fetch and verify original files against uploaded archive
         shell: bash
         run: |
           set -euo pipefail
@@ -22,22 +22,16 @@ jobs:
           for f in app.js content.js core.js data.js index.html llms-full.txt openapi.json paynet_business.svg styles.css; do
             curl --fail --location --retry 3 --max-time 45 "$BASE/$f" -o "/tmp/paynet-original/$f"
           done
-          cat > /tmp/paynet-original/SHA256SUMS <<'CHECKSUMS'
-6ceb6c9da633734a39841920ec95397c97a47cd4cd7691a89090bf9898b0d3c7  app.js
-d3920e8a277ba75fe48a732317c71c0521fad3a00832e7ffdffbf9fc9bd9f7b2  content.js
-365129c07e386688861d5fcd6f3b27c038becaa35b0fec75f89cc46a8c9cb215  core.js
-261d42ac61fa0f8607169bd333238515aca07571e301d97881650395987c7200  data.js
-1cba3b4fa8857553dd518635eef1a99141e44a398e566105598ec2310a2caa68  index.html
-08b474a81c363712c090b68c759f46a17fd2b4add32828f349931e64a5b6e607  llms-full.txt
-bd16c5891b54de9b5c9f13e26c8dc9355fa6ad77ba796b2531e558b930d4c56b  openapi.json
-19ccb2a217209bde32176e902bdffdab095fff3f55175aa89d9331a08d77d9d3  paynet_business.svg
-acc40a1e1751bb27178eba39410c6cd0523fb212255c7a5f3653ee07b5ca98f5  styles.css
-CHECKSUMS
+          printf '%s\\n' '6ceb6c9da633734a39841920ec95397c97a47cd4cd7691a89090bf9898b0d3c7  app.js' > /tmp/paynet-original/SHA256SUMS
+          printf '%s\\n' 'd3920e8a277ba75fe48a732317c71c0521fad3a00832e7ffdffbf9fc9bd9f7b2  content.js' >> /tmp/paynet-original/SHA256SUMS
+          printf '%s\\n' '365129c07e386688861d5fcd6f3b27c038becaa35b0fec75f89cc46a8c9cb215  core.js' >> /tmp/paynet-original/SHA256SUMS
+          printf '%s\\n' '261d42ac61fa0f8607169bd333238515aca07571e301d97881650395987c7200  data.js' >> /tmp/paynet-original/SHA256SUMS
+          printf '%s\\n' '1cba3b4fa8857553dd518635eef1a99141e44a398e566105598ec2310a2caa68  index.html' >> /tmp/paynet-original/SHA256SUMS
+          printf '%s\\n' '08b474a81c363712c090b68c759f46a17fd2b4add32828f349931e64a5b6e607  llms-full.txt' >> /tmp/paynet-original/SHA256SUMS
+          printf '%s\\n' 'bd16c5891b54de9b5c9f13e26c8dc9355fa6ad77ba796b2531e558b930d4c56b  openapi.json' >> /tmp/paynet-original/SHA256SUMS
+          printf '%s\\n' '19ccb2a217209bde32176e902bdffdab095fff3f55175aa89d9331a08d77d9d3  paynet_business.svg' >> /tmp/paynet-original/SHA256SUMS
+          printf '%s\\n' 'acc40a1e1751bb27178eba39410c6cd0523fb212255c7a5f3653ee07b5ca98f5  styles.css' >> /tmp/paynet-original/SHA256SUMS
           (cd /tmp/paynet-original && sha256sum -c SHA256SUMS)
-      - name: Replace demo with original site (only after all hashes match)
-        shell: bash
-        run: |
-          set -euo pipefail
           for f in app.js content.js core.js data.js index.html llms-full.txt openapi.json paynet_business.svg styles.css; do
             cp "/tmp/paynet-original/$f" "$f"
           done
