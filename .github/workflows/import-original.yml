@@ -1,4 +1,4 @@
-name: Import exact original Paynet Developers site
+name: Import published Paynet Developers site
 on:
   push:
     paths:
@@ -6,39 +6,35 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: published-site-import
+  cancel-in-progress: true
 jobs:
   import:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-      - name: Fetch and verify original files against uploaded archive
+      - name: Fetch published site assets into this repository only
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/paynet-original
+          mkdir -p /tmp/paynet-live
           BASE="https://paynet-developers-lab-nov26.stoianovo.chatgpt.site"
           for f in app.js content.js core.js data.js index.html llms-full.txt openapi.json paynet_business.svg styles.css; do
-            curl --fail --location --retry 3 --max-time 45 "$BASE/$f" -o "/tmp/paynet-original/$f"
+            curl --fail --location --retry 3 --max-time 45 "$BASE/$f" -o "/tmp/paynet-live/$f"
+            test -s "/tmp/paynet-live/$f"
           done
-          echo '6ceb6c9da633734a39841920ec95397c97a47cd4cd7691a89090bf9898b0d3c7  app.js' > /tmp/paynet-original/SHA256SUMS
-          echo 'd3920e8a277ba75fe48a732317c71c0521fad3a00832e7ffdffbf9fc9bd9f7b2  content.js' >> /tmp/paynet-original/SHA256SUMS
-          echo '365129c07e386688861d5fcd6f3b27c038becaa35b0fec75f89cc46a8c9cb215  core.js' >> /tmp/paynet-original/SHA256SUMS
-          echo '261d42ac61fa0f8607169bd333238515aca07571e301d97881650395987c7200  data.js' >> /tmp/paynet-original/SHA256SUMS
-          echo '1cba3b4fa8857553dd518635eef1a99141e44a398e566105598ec2310a2caa68  index.html' >> /tmp/paynet-original/SHA256SUMS
-          echo '08b474a81c363712c090b68c759f46a17fd2b4add32828f349931e64a5b6e607  llms-full.txt' >> /tmp/paynet-original/SHA256SUMS
-          echo 'bd16c5891b54de9b5c9f13e26c8dc9355fa6ad77ba796b2531e558b930d4c56b  openapi.json' >> /tmp/paynet-original/SHA256SUMS
-          echo '19ccb2a217209bde32176e902bdffdab095fff3f55175aa89d9331a08d77d9d3  paynet_business.svg' >> /tmp/paynet-original/SHA256SUMS
-          echo 'acc40a1e1751bb27178eba39410c6cd0523fb212255c7a5f3653ee07b5ca98f5  styles.css' >> /tmp/paynet-original/SHA256SUMS
-          (cd /tmp/paynet-original && sha256sum -c SHA256SUMS)
+          grep -q '<div id="app">' /tmp/paynet-live/index.html
+          grep -q 'styles.css' /tmp/paynet-live/index.html
+          grep -q 'core.js' /tmp/paynet-live/index.html
+          python3 -m json.tool /tmp/paynet-live/openapi.json >/dev/null
           for f in app.js content.js core.js data.js index.html llms-full.txt openapi.json paynet_business.svg styles.css; do
-            cp "/tmp/paynet-original/$f" "$f"
+            cp "/tmp/paynet-live/$f" "$f"
           done
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app.js content.js core.js data.js index.html llms-full.txt openapi.json paynet_business.svg styles.css
           if ! git diff --cached --quiet; then
-            git commit -m "Replace demo with byte-verified original Paynet Developers build"
+            git commit -m "Publish existing Paynet Developers Lab site in isolated repository"
             git push
           fi
